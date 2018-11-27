@@ -29,11 +29,11 @@ struct RootInterface {
   name: String,
   private: i64,
   #[serde(rename = "allowPassiveBridging")]
-  allow_passive_bridging: i64,
+  allow_passive_bridging: i8,
   #[serde(rename = "v4AssignMode")]
-  v_4_assign_mode: String,
+  v4_assign_mode: String,
   #[serde(rename = "v6AssignMode")]
-  v_6_assign_mode: String,
+  v6_assign_mode: String,
   routes: Vec<Routes>,
   #[serde(rename = "ipAssignmentPools")]
   ip_assignment_pools: Vec<IpAssignmentPools>,
@@ -45,19 +45,30 @@ struct RootInterface {
 #[derive(Debug,Serialize, Deserialize)]
 struct Routes {
   target: IpNet,
-  via: IpAddr,
-  flags: u16,
-  metric: u16,
+  via: Option<IpAddr>,
+  flags: u16 ,
+  metric: u16 ,
 }
 
 #[derive(Debug,Serialize, Deserialize)]
 struct Rules {
   #[serde(rename = "etherType")]
-  ether_type: u16,
+  ethtype: u16,
   not: bool,
   or: bool,
   #[serde(rename = "type")]
-  _type: String,
+  rtype: String,
+}
+
+impl Routes {
+  fn new() -> Self {
+   Routes { 
+     target: "169.255.0.0/16".parse::<IpNet>().unwrap(),
+     via: None ,
+     flags:0 ,
+     metric: 0,
+     }
+  }
 }
 
 fn main() -> Result<(),Error> {
@@ -66,8 +77,14 @@ fn main() -> Result<(),Error> {
   let n: IpNet = "10.10.10.0/24".parse()?;
   println!("{:?}",n);
   let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
-  let r: Routes = Routes {target: n , via: s ,flags: 0, metric: 0};
+  let r: Routes = Routes {target: n , via: Some(s),flags: 0, metric: 0};
   let j = serde_json::to_string(&p)?;
-  println!("{}",j);
+  let j2 = serde_json::to_string(&r)?;
+  let rt = Routes::new();
+  let routes = vec![Routes::new(),Routes::new()];
+  println!("{:?}",routes);
+  println!("{}",j2);
+  let j2 = serde_json::to_string(&rt)?;
+  println!("{}",j2);
   Ok(())
 }
