@@ -44,7 +44,7 @@ use std::net::IpAddr;
 use ipnet::IpNet;
 use failure::Error;
 
-//use std::error::Error;
+// use std::error::Error;
 
 use clap::{Arg, App, SubCommand};
 
@@ -54,8 +54,101 @@ fn main() -> Result<(),Error> {
             .version("0.1")
             .author("Jan De Landtsheer")
             .about("cli and api to control local zerotier daemon")
-            .arg(Arg::with_name("auth"));
+            .subcommand(SubCommand::with_name("create")
+                .about("create a new network")
+                .arg(Arg::with_name("start")
+                  .short("s")
+                  .long("start")
+                  .takes_value(true)
+                  .required(true)
+                  .help("Start ip of range in network")
+                )
+                .arg(Arg::with_name("end")
+                  .short("e")
+                  .long("end")
+                  .takes_value(true)
+                  .required(true)
+                  .help("End ip of range in network")
+                )
+                .arg(Arg::with_name("mask")
+                  .short("n")
+                  .long("mask")
+                  .takes_value(true)
+                  .required(true)
+                  .help("network mask in bits ")
+                )
+                .arg(Arg::with_name("private")
+                  .short("p")
+                  .long("priv")
+                  .takes_value(true)
+                  .required(true)
+                  .help("is that network private")
+                )
+            )
+            .subcommand(SubCommand::with_name("addnet")
+                .about("add a new subnet rand range")
+                .arg(Arg::with_name("ztnetid")
+                  .short("i")
+                  .long("ztnetid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier address of network")
+                )
+                .arg(Arg::with_name("start")
+                  .short("s")
+                  .long("start")
+                  .takes_value(true)
+                  .required(true)
+                  .help("Start ip of range in network")
+                )
+                .arg(Arg::with_name("end")
+                  .short("e")
+                  .long("end")
+                  .takes_value(true)
+                  .required(true)
+                  .help("End ip of range in network")
+                )
+                .arg(Arg::with_name("mask")
+                  .short("n")
+                  .long("mask")
+                  .takes_value(true)
+                  .required(true)
+                  .help("network mask in bits ")
+                )
+            )
+            .subcommand(SubCommand::with_name("addroute")
+                .about("add a route for a network")
+                .arg(Arg::with_name("destination net")
+                  .short("d")
+                  .long("destnet")
+                  .takes_value(true)
+                  .required(true)
+                  .help("subnet to reach")
+                )
+                .arg(Arg::with_name("mask")
+                  .short("n")
+                  .long("mask")
+                  .takes_value(true)
+                  .required(true)
+                  .help("network mask in bits ")
+                )
+                .arg(Arg::with_name("gateway")
+                  .short("g")
+                  .long("gateway")
+                  .takes_value(true)
+                  .required(true)
+                  .help("through which ip to reach that net")
+                )
+            )
+            .subcommand(SubCommand::with_name("auth")
+            )
+            .subcommand(SubCommand::with_name("deauth")
+            )
+            .subcommand(SubCommand::with_name("destroy")
+            )
+            .get_matches();
 
+  println!("{:?}",matches);
 
   let s: IpAddr = "10.10.10.10".parse()?;
   let e: IpAddr = "10.10.10.100".parse()?;
@@ -63,7 +156,7 @@ fn main() -> Result<(),Error> {
   let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
 
   let mut rt = Routes::default();
-  rt.target = "172.16.1.0/24".parse()?;
+  rt.target = "172.16.1.3/24".parse()?;
   rt.via = Some("10.10.10.254".parse()?);
   let mut rt2 = Routes::default();
   rt2.target = n;
