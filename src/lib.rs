@@ -16,7 +16,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use failure::Error;
 
 const ZT_ETHERTYPE_IPV4: u16 = 0x0800;
-const ZT_ETHERTYPE_ARP: u16 = 0x0806;
+const ZT_ETHERTYPE_ARP:  u16 = 0x0806;
 const ZT_ETHERTYPE_IPV6: u16 = 0x86dd;
 
 #[derive(Fail, Debug)]
@@ -117,15 +117,27 @@ impl RootInterface {
      })
   }
 
-//  pub fn with(mut self, n: String, s: IpAddr, e: IpAddr, m: u8 , p: bool) -> Result<Self, ZTError> {
-//    // create a zt network with 'reasonable' defaults
-//    self.name = n;
-//    self.ip_assignment_pools = vec!(IpAssignmentPools {ip_range_start: s, ip_range_end: e});
-//    self.private = true;
-//    let default_rules = vec!(
-//    );
-//    Ok(self)
-//  } 
+  pub fn with(n: String, p:bool, s: IpAddr, e: IpAddr, m: u8) -> Self {
+    let subnet = RootInterface::new_ipnet(s, m);
+
+    let route = Routes {
+      target: subnet.unwrap(),
+      ..Default::default()
+    };
+
+    let mut pool = IpAssignmentPools::default();
+    pool.set_range(s, e);
+
+    let mut r: RootInterface = RootInterface::default();
+    r.name = n;
+    r.private = p;
+    r.ip_assignment_pools = vec!(pool) ;
+    r.routes = vec!(route);
+    r
+  }
+
+// end RootInterface
+}
 
 #[derive(Default,Debug,Serialize, Deserialize)]
 pub struct Rules {
@@ -140,12 +152,8 @@ pub struct Rules {
 }
 
 impl Rules {
-  pub fn with(mut self, e: u16, n: bool, o: bool, t: String) -> Result<Self,Error> {
-    self.ethtype = e;
-    self.rnot = n;
-    self.ror = o ;
-    self.rtype = t;
-    Ok(self)
+  pub fn with(e: u16, n: bool, o: bool, t: String) -> Self {
+    Rules {ethtype: e, rnot: n, ror: o, rtype: t,}
   }
 }
 
@@ -169,7 +177,6 @@ impl Default for Routes {
 }
 
 impl Routes {
-
   /// Create a new route entry
   pub fn with(&mut self, target: IpNet, gw: Option<IpAddr>){
     self.target = target;

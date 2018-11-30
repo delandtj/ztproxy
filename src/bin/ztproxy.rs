@@ -192,8 +192,16 @@ fn main() -> Result<(),Error> {
   println!("{:?}",matches);
 
 
-//  let s: IpAddr = "10.10.10.10".parse()?;
-//  let e: IpAddr = "10.10.10.100".parse()?;
+  let start   : IpAddr = "10.10.10.10".parse()?;
+  let end     : IpAddr = "10.10.10.100".parse()?;
+  let mask    : u8     = 24u8;
+  let private : bool = true;
+
+  let network = RootInterface::with("testnet".into(), true, start, end, mask);
+  let j = serde_json::to_string(&network)?;
+  println!("{}",j);
+  println!("{:?}",network);
+  
 //  let n: IpNet = "10.10.10.0/24".parse()?;
 //  let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
 //
