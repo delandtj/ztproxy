@@ -9,7 +9,8 @@ extern crate serde_json;
 
 extern crate ipnet; 
 
-use ipnet::IpNet;
+use ipnet::{IpNet,Ipv4Net,Ipv6Net};
+use ipnet::PrefixLenError;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 use failure::Error;
@@ -36,8 +37,8 @@ pub struct IpAssignmentPools {
 impl Default for IpAssignmentPools{
   fn default() -> Self {
     IpAssignmentPools{
-     ip_range_start : "169.255.0.10".parse().unwrap(),
-     ip_range_end   : "169.255.0.100".parse().unwrap(),
+     ip_range_start : "169.254.0.10".parse().unwrap(),
+     ip_range_end   : "169.254.0.100".parse().unwrap(),
     }
   }
 }
@@ -49,7 +50,7 @@ impl IpAssignmentPools {
   }
 }
 
-#[derive(Default, Debug,Serialize, Deserialize)]
+#[derive(Debug,Serialize, Deserialize)]
 pub struct RootInterface {
   pub auth: Option<String>,
   pub name: String,
@@ -68,23 +69,23 @@ pub struct RootInterface {
   pub tags: Option<Vec<Rules>>,
 }
 
-//impl Default for RootInterface {
-//  fn default() -> RootInterface {
-//    RootInterface {
-//      auth: None,
-//      name: "tfnet".to_owned(),
-//      private: true,
-//      allow_passive_bridging: false,
-//      v4_assign_mode: "zt".to_owned(),
-//      v6_assign_mode: "none".to_owned(),
-//      routes: vec!(Routes::default()),
-//      ip_assignment_pools: vec!(IpAssignmentPools::default()),
-//      rules: vec!(Rules::default()), 
-//      capabilities: None,
-//      tags: None,
-//    }
-//  }
-//}
+impl Default for RootInterface {
+  fn default() -> RootInterface {
+    RootInterface {
+      auth: None,
+      name: "tfnet".to_owned(),
+      private: true,
+      allow_passive_bridging: false,
+      v4_assign_mode: "zt".to_owned(),
+      v6_assign_mode: "none".to_owned(),
+      routes: vec!(Routes::default()),
+      ip_assignment_pools: vec!(IpAssignmentPools::default()),
+      rules: vec!(Rules::default()), 
+      capabilities: None,
+      tags: None,
+    }
+  }
+}
 
 
 impl RootInterface {
@@ -98,6 +99,7 @@ impl RootInterface {
       if r.via.is_some() {
         // do we have a net that can contain that gw ?
         for n in &nets{
+          // we can unwrap here, as it's typechecked before
           if n.target.contains(&r.via.unwrap()){
             return Ok(())
           }
@@ -107,9 +109,25 @@ impl RootInterface {
     }
     return Err(ZTError{code:13i32 ,message: "shouldn't get here (fn verify_routes)".to_string()})
   }
-}
 
-#[derive(Default, Debug,Serialize, Deserialize)]
+  fn new_ipnet(a: IpAddr, m: u8) -> Result<IpNet, PrefixLenError>{
+     Ok( match a {
+       IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, m)?),
+       IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, m)?),
+     })
+  }
+
+//  pub fn with(mut self, n: String, s: IpAddr, e: IpAddr, m: u8 , p: bool) -> Result<Self, ZTError> {
+//    // create a zt network with 'reasonable' defaults
+//    self.name = n;
+//    self.ip_assignment_pools = vec!(IpAssignmentPools {ip_range_start: s, ip_range_end: e});
+//    self.private = true;
+//    let default_rules = vec!(
+//    );
+//    Ok(self)
+//  } 
+
+#[derive(Default,Debug,Serialize, Deserialize)]
 pub struct Rules {
   #[serde(rename = "etherType")]
   pub ethtype: u16,
@@ -121,16 +139,15 @@ pub struct Rules {
   pub rtype: String,
 }
 
-//impl Default for Rules {
-//  fn default() -> Rules {
-//    Rules {
-//      ethtype: ZT_ETHERTYPE_IPV4,
-//      rnot : false,
-//      ror  : false,
-//      rtype: "ACTION_DROP".to_owned(),
-//    }
-//  }
-//}
+impl Rules {
+  pub fn with(mut self, e: u16, n: bool, o: bool, t: String) -> Result<Self,Error> {
+    self.ethtype = e;
+    self.rnot = n;
+    self.ror = o ;
+    self.rtype = t;
+    Ok(self)
+  }
+}
 
 #[derive(Clone, Debug,Serialize, Deserialize)]
 pub struct Routes {

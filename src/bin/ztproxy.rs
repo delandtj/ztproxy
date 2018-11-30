@@ -37,6 +37,7 @@
 extern crate clap;
 extern crate ipnet;
 extern crate failure;
+
 // extern crate ztproxy;
 use ztproxy::*;
 
@@ -141,37 +142,78 @@ fn main() -> Result<(),Error> {
                 )
             )
             .subcommand(SubCommand::with_name("auth")
+                .arg(Arg::with_name("ztnetid")
+                  .short("i")
+                  .long("ztnetid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier address of network")
+                )
+                .arg(Arg::with_name("clientid")
+                  .short("c")
+                  .long("clid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier client id")
+                )
             )
             .subcommand(SubCommand::with_name("deauth")
+                .arg(Arg::with_name("ztnetid")
+                  .short("i")
+                  .long("ztnetid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier address of network")
+                )
+                .arg(Arg::with_name("clientid")
+                  .short("c")
+                  .long("clid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier client id")
+                )
             )
             .subcommand(SubCommand::with_name("destroy")
+                .arg(Arg::with_name("ztnetid")
+                  .short("i")
+                  .long("ztnetid")
+                  .takes_value(true)
+                  .required(true)
+                  .help("zerotier address of network")
+                )
+                .arg(Arg::with_name("need to be sure")
+                  .long("force")
+                  .required(true)
+                  .help("no vorce ? no delete!")
+                )
             )
             .get_matches();
 
   println!("{:?}",matches);
 
-  let s: IpAddr = "10.10.10.10".parse()?;
-  let e: IpAddr = "10.10.10.100".parse()?;
-  let n: IpNet = "10.10.10.0/24".parse()?;
-  let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
 
-  let mut rt = Routes::default();
-  rt.target = "172.16.1.3/24".parse()?;
-  rt.via = Some("10.10.10.254".parse()?);
-  let mut rt2 = Routes::default();
-  rt2.target = n;
-  rt2.set_flag(20u16);
-  let rt3 = Routes::default();
-
-  let mut rules = Rules::default();
-
-  let mut network = RootInterface::default();
-  network.routes = vec!(rt);
-  network.routes.push(rt2);
-  network.rules = vec!(rules);
-  network.ip_assignment_pools = vec!(p);
-  network.verify_routes()?;
-  let j = serde_json::to_string(&network)?;
-  println!("{}",j);
+//  let s: IpAddr = "10.10.10.10".parse()?;
+//  let e: IpAddr = "10.10.10.100".parse()?;
+//  let n: IpNet = "10.10.10.0/24".parse()?;
+//  let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
+//
+//  let mut rt = Routes::default();
+//  rt.target = "172.16.1.3/24".parse()?;
+//  rt.via = Some("10.10.10.254".parse()?);
+//  let mut rt2 = Routes::default();
+//  rt2.target = n;
+//  rt2.set_flag(20u16);
+//  let rt3 = Routes::default();
+//
+//  let mut rules = Rules::default();
+//
+//  let mut network = RootInterface::default();
+//  network.routes = vec!(rt);
+//  network.routes.push(rt2);
+//  network.rules = vec!(rules);
+//  network.ip_assignment_pools = vec!(p);
+//  network.verify_routes()?;
+//  let j = serde_json::to_string(&network)?;
+//  println!("{}",j);
   Ok(())
 }
