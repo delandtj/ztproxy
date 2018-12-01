@@ -7,7 +7,7 @@
 ///     -e --end-ip   : IpAddr
 ///     -n --netmask  : u8
 ///     -p --private  : true , Default=true
-    
+/// 
 ///  Create a new network
 /// ex: ztnet create -s 10.10.10.10 -e 10.10.10.100 -n 24 -p true # will request creation of a ztnet
 ///     return : 0, ztnetid or error
@@ -42,7 +42,6 @@ extern crate failure;
 use ztproxy::*;
 
 use std::net::IpAddr;
-use ipnet::IpNet;
 use failure::Error;
 
 // use std::error::Error;
@@ -53,7 +52,7 @@ use clap::{Arg, App, SubCommand};
 fn main() -> Result<(),Error> {
     let matches = App::new("ZeroTier proxy")
             .version("0.1")
-            .author("Jan De Landtsheer")
+            .author("Jan De Landtsheer <jan@threefoldtech.com>")
             .about("cli and api to control local zerotier daemon")
             .subcommand(SubCommand::with_name("create")
                 .about("create a new network")
@@ -189,39 +188,23 @@ fn main() -> Result<(),Error> {
             )
             .get_matches();
 
-  println!("{:?}",matches);
 
 
   let start   : IpAddr = "10.10.10.10".parse()?;
   let end     : IpAddr = "10.10.10.100".parse()?;
   let mask    : u8     = 24u8;
-  let private : bool = true;
+  let private : bool   = true;
 
-  let network = RootInterface::with("testnet".into(), true, start, end, mask);
+  let network = RootInterface::with(
+    "testnet".into(), 
+    private, 
+    start, 
+    end, 
+    mask
+    );
   let j = serde_json::to_string(&network)?;
   println!("{}",j);
   println!("{:?}",network);
-  
-//  let n: IpNet = "10.10.10.0/24".parse()?;
-//  let p: IpAssignmentPools = IpAssignmentPools {ip_range_start: s, ip_range_end: e};
-//
-//  let mut rt = Routes::default();
-//  rt.target = "172.16.1.3/24".parse()?;
-//  rt.via = Some("10.10.10.254".parse()?);
-//  let mut rt2 = Routes::default();
-//  rt2.target = n;
-//  rt2.set_flag(20u16);
-//  let rt3 = Routes::default();
-//
-//  let mut rules = Rules::default();
-//
-//  let mut network = RootInterface::default();
-//  network.routes = vec!(rt);
-//  network.routes.push(rt2);
-//  network.rules = vec!(rules);
-//  network.ip_assignment_pools = vec!(p);
-//  network.verify_routes()?;
-//  let j = serde_json::to_string(&network)?;
-//  println!("{}",j);
+
   Ok(())
 }

@@ -1,3 +1,28 @@
+//! This is a library for managing your local zerotier daemon, adding 
+//! controls for the embedded controller and moon features.
+//! 
+//! ## basic usage
+//! 
+//! Once a zerotier daemon runs, you can join a zerotier network ID with
+//!     
+//!     zerotier-cli join $networkid
+//! 
+//! That command lets the daemon request the information for that network id
+//! and register it's own id as a client in that network.
+//! 
+//! The world controllers then allocate a free ip address and send it to the 
+//! requesting client. If the network is flagged as private, you need to use
+//! the ZT GUI to find the id, and allow it to that network so it can receive 
+//! and send packets on that network.
+//! 
+//! The zerotier daemons of `Planet` are exactly the same as the ones of the 
+//! clients, except for the fact that they share id's and network 
+//! configurations in a Rethinkdb Database.
+//! 
+//! So we can run our own controller -that is, activate the embedded controller
+//! that is already there- but that one saves its config in Json files.
+//! 
+//! 
 extern crate failure;
 #[macro_use] extern crate failure_derive;
 
@@ -19,6 +44,12 @@ const ZT_ETHERTYPE_IPV4: u16 = 0x0800;
 const ZT_ETHERTYPE_ARP:  u16 = 0x0806;
 const ZT_ETHERTYPE_IPV6: u16 = 0x86dd;
 
+/// we use a specifi error struct so we can give a code for easy location 
+/// of a failure in the library/binary/api
+/// 
+/// where : 1xx = library errors  
+///         2xx = cli errors  
+///         3xx = api/http errors  
 #[derive(Fail, Debug)]
 #[fail(display = "Zerotier config validity error code {}. ({})",code,message)]
 pub struct ZTError{
@@ -26,6 +57,7 @@ pub struct ZTError{
   message: String,
 }
 
+/// Range of addresses to allocate from IPv4/6
 #[derive(Debug,Serialize, Deserialize)]
 pub struct IpAssignmentPools {
   #[serde(rename = "ipRangeStart")]
@@ -34,6 +66,7 @@ pub struct IpAssignmentPools {
   pub ip_range_end: IpAddr,
 }
 
+/// There is no default for IpAddr, so we set ipv4 LL as default
 impl Default for IpAssignmentPools{
   fn default() -> Self {
     IpAssignmentPools{
@@ -43,6 +76,7 @@ impl Default for IpAssignmentPools{
   }
 }
 
+/// If you would want to update your struct with something else
 impl IpAssignmentPools {
   pub fn set_range(&mut self, s: IpAddr, e:IpAddr) {
     self.ip_range_start = s;
@@ -50,6 +84,9 @@ impl IpAssignmentPools {
   }
 }
 
+/// The main struct from which we create the JSON that we're going to send to 
+/// the zerotier daemon. The serde renames are there 'just' to make the compiler
+/// happy and conform to the default snake_case of how to Rust.
 #[derive(Debug,Serialize, Deserialize)]
 pub struct RootInterface {
   pub auth: Option<String>,
@@ -69,6 +106,7 @@ pub struct RootInterface {
   pub tags: Option<Vec<Rules>>,
 }
 
+/// we would not need a default per se, but it can come in handy for the API
 impl Default for RootInterface {
   fn default() -> RootInterface {
     RootInterface {
@@ -105,11 +143,13 @@ impl RootInterface {
           }
         }
       }
-      return Err(ZTError{code:11i32 ,message: "no carrying net for gw".to_string()})
+      return Err(ZTError{code:101i32 ,message: "no carrying net for gw".to_string()})
     }
-    return Err(ZTError{code:13i32 ,message: "shouldn't get here (fn verify_routes)".to_string()})
+    return Err(ZTError{code:102i32 ,message: "shouldn't get here (fn verify_routes)".to_string()})
   }
 
+  /// There is no into() for an IpAddr/mask, so we add it here.
+  /// TBD: issue pull request for that to the ipnet maintainer.
   fn new_ipnet(a: IpAddr, m: u8) -> Result<IpNet, PrefixLenError>{
      Ok( match a {
        IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, m)?),
@@ -117,9 +157,15 @@ impl RootInterface {
      })
   }
 
+  /// Are the 2 ipaddrs valid for that range?
+  fn validate_sibling(){}
+
+  /// We create a rootinterface with some reasonable defaults,
+  /// with private = true
   pub fn with(n: String, p:bool, s: IpAddr, e: IpAddr, m: u8) -> Self {
     let subnet = RootInterface::new_ipnet(s, m);
 
+    // yeah baby
     let route = Routes {
       target: subnet.unwrap(),
       ..Default::default()
@@ -133,12 +179,19 @@ impl RootInterface {
     r.private = p;
     r.ip_assignment_pools = vec!(pool) ;
     r.routes = vec!(route);
+    // is instance, return it
     r
   }
 
 // end RootInterface
 }
 
+/// Zerotier's notion for rules in this format is for 1.2.x clients,
+/// We'll adhere to **only** that. 
+/// 
+/// This means that nodes (clients) that are version <1.2,  
+/// won't be able to forward packets in the nets managed 
+/// by this controller
 #[derive(Default,Debug,Serialize, Deserialize)]
 pub struct Rules {
   #[serde(rename = "etherType")]
@@ -152,11 +205,13 @@ pub struct Rules {
 }
 
 impl Rules {
+  /// Create a rule 
   pub fn with(e: u16, n: bool, o: bool, t: String) -> Self {
     Rules {ethtype: e, rnot: n, ror: o, rtype: t,}
   }
 }
 
+/// Every net has at least one route, the one that holds the IpAssignmentPool
 #[derive(Clone, Debug,Serialize, Deserialize)]
 pub struct Routes {
   pub target: IpNet,
@@ -166,9 +221,10 @@ pub struct Routes {
 }
 
 impl Default for Routes {
+  /// A default for an unset route is the ipv4 LL network
   fn default() -> Self {
    Routes { 
-     target: "169.255.0.0/16".parse().unwrap(),
+     target: "169.254.0.0/16".parse().unwrap(),
      via: None ,
      flags:0 ,
      metric: 0,
