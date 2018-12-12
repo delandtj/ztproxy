@@ -19,3 +19,5 @@ clap = {version = "2.32.0", features = ["yaml"]}
 reqwest = "0.9.5"
 
 jsonwebtoken = "5.0.1"
+
+url = "1.7.2"

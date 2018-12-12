@@ -5,7 +5,7 @@
 //!
 //! Once a zerotier daemon runs, you can join a zerotier network ID with
 //!     
-//!     zerotier-cli join $networkid
+//! zerotier-cli join $networkid
 //!
 //! That command lets the daemon request the information for that network id
 //! and register it's own id as a client in that network.
@@ -27,7 +27,11 @@
 // TODO: 
 //   - is_sibling
 //   - vec!(default_rules)
-mod commands;
+
+
+
+pub mod commands;
+pub mod server;
 
 extern crate failure;
 #[macro_use]
@@ -281,5 +285,47 @@ impl Routes {
     /// set metric
     pub fn set_metric(&mut self, m: u16) {
         self.metric = m;
+    }
+}
+
+pub struct Auth {
+  pub serverid: Option<String>,
+  pub auth_token: String,
+}
+
+impl Auth {
+  /// Reads the serverid and local auth for the network
+  /// If we want to control the 0-OS local daemon, we read in `/tmp/zt`
+  pub fn read_auth() -> Result<Self,Error>{
+    let srvstr: String = std::fs::read_to_string("/var/lib/zerotier-one/identity.public")?;
+    let token: String = std::fs::read_to_string("/home/delandtj/.zeroTierOneAuthToken")?;
+
+//    let srvstr: String = match std::fs::read_to_string("/var/lib/zerotier-one/identity.public"){
+//        Ok(srv) => srv,
+//        Err(_) => "boo".to_owned(),
+//    };
+//
+//    let token: String = match std::fs:read_to_string("/var/lib/zerotier-one/authtoken.public"){
+//        Ok(tok) => tok,
+//        Err(_) => "boo".to_owned(),
+//    };
+
+    let serverid = 
+        Ok(Auth {
+        serverid: Some(String::from(&srvstr[1..10])),
+        auth_token: String::from(&token[..]),
+        });
+    serverid
+  }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_auth()-> Result<(),Error> {
+        let auth_data: Auth = Auth::read_auth()?;
+        println!("{:?}  --  {:?}",auth_data.auth_token, auth_data.serverid);
+        Ok(())
     }
 }

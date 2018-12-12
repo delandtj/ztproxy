@@ -51,9 +51,10 @@ fn get_params() -> clap::ArgMatches<'static> {
         .version("0.1")
         .author("Jan De Landtsheer <jan@threefoldtech.com>")
         .about("cli and api to control local zerotier daemon")
+        .usage("ztproxy <COMMAND> [params]\n    Use --help (-h) to see your options")
         .subcommand(
             SubCommand::with_name("create")
-                .about("create a new network")
+                .about("Create a new network")
                 .arg(
                     Arg::with_name("name")
                         .short("n")
@@ -81,25 +82,25 @@ fn get_params() -> clap::ArgMatches<'static> {
                         .long("mask")
                         .takes_value(true)
                         .required(true)
-                        .help("network mask in bits "),
+                        .help("Network mask in bits "),
                 ).arg(
                     Arg::with_name("private")
                         .short("p")
                         .long("private")
                         .takes_value(false)
                         .required(false)
-                        .help("is that network private"),
+                        .help("Is that network private"),
                 ),
         ).subcommand(
             SubCommand::with_name("addsubnet")
-                .about("add a new subnet rand range")
+                .about("Add a new subnet rand range")
                 .arg(
                     Arg::with_name("nwid")
                         .short("i")
                         .long("nwid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier address of network"),
+                        .help("Zerotier address of network"),
                 ).arg(
                     Arg::with_name("start")
                         .short("s")
@@ -120,81 +121,84 @@ fn get_params() -> clap::ArgMatches<'static> {
                         .long("mask")
                         .takes_value(true)
                         .required(true)
-                        .help("network mask in bits "),
+                        .help("Network mask in bits "),
                 ),
         ).subcommand(
             SubCommand::with_name("addroute")
-                .about("add a route for a network")
+                .about("Add a route for a network")
                 .arg(
                     Arg::with_name("destination net")
                         .short("d")
                         .long("destnet")
                         .takes_value(true)
                         .required(true)
-                        .help("subnet to reach"),
+                        .help("Subnet to reach"),
                 ).arg(
                     Arg::with_name("mask")
                         .short("n")
                         .long("mask")
                         .takes_value(true)
                         .required(true)
-                        .help("network mask in bits "),
+                        .help("Network mask in bits "),
                 ).arg(
                     Arg::with_name("gateway")
                         .short("g")
                         .long("gateway")
                         .takes_value(true)
                         .required(true)
-                        .help("through which ip to reach that net"),
+                        .help("Through which ip to reach that net"),
                 ),
         ).subcommand(
             SubCommand::with_name("auth")
+                .about("Authorize a client node")
                 .arg(
                     Arg::with_name("ztnetid")
                         .short("i")
                         .long("ztnetid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier address of network"),
+                        .help("Zerotier address of network"),
                 ).arg(
                     Arg::with_name("clientid")
                         .short("c")
                         .long("clid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier client id"),
+                        .help("Zerotier client id"),
                 ),
         ).subcommand(
             SubCommand::with_name("deauth")
+                .about("Un-authorize a client node")
                 .arg(
                     Arg::with_name("ztnetid")
                         .short("i")
                         .long("ztnetid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier address of network"),
+                        .help("Zerotier address of network"),
                 ).arg(
                     Arg::with_name("clientid")
                         .short("c")
                         .long("clid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier client id"),
+                        .help("Zerotier client id"),
                 ),
         ).subcommand(
             SubCommand::with_name("destroy")
+                .about("Destroy a network on the local controller")
                 .arg(
                     Arg::with_name("ztnetid")
                         .short("i")
                         .long("ztnetid")
                         .takes_value(true)
                         .required(true)
-                        .help("zerotier address of network"),
+                        .help("Zerotier address of network"),
                 ).arg(
                     Arg::with_name("need to be sure")
                         .long("force")
                         .required(true)
-                        .help("no force ? no delete!"),
+                        .help("No force ? no delete!"),
                 ),
         ).get_matches();
     matches
@@ -244,8 +248,9 @@ fn main() -> Result<(), Error> {
             r.nwid = Some(nwid.to_string());
             //return Ok(commands::update_net(&r));
         }
-        ("", None) => println!("no command used"),
-        _ => println!("unknown command"),
+        ("", None) => println!("No command entered \n{}",matches.usage()),
+        //println!("no command used"),
+        _ => println!("unknown command! \n{}",matches.usage()),
     }
 
     //  let start   : IpAddr = "10.10.10.10".parse()?;
